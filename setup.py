@@ -5,10 +5,14 @@
 
 from distutils.core import setup, Extension
 
-import subprocess
+import subprocess, sys
 
 def pkgconfig_get(*args):
-	output = subprocess.check_output(('pkg-config',) + args)
+	subp = subprocess.Popen(('pkg-config',) + args,
+			stdout = subprocess.PIPE)
+	output = subp.communicate()[0]
+	if subp.returncode != 0:
+		sys.exit('\npkg-config failed to find libmount, please install util-linux.')
 	return output.decode('utf8').strip().split()
 
 cflags, libs = [pkgconfig_get(x, 'mount') for x in ('--cflags', '--libs')]
