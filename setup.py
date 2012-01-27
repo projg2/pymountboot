@@ -18,11 +18,11 @@ def pkgconfig_get(*args):
 cflags, libs = [pkgconfig_get(x, 'mount') for x in ('--cflags', '--libs')]
 
 setup(
-		name = 'pyremountboot',
+		name = 'pymountboot',
 		version = '0',
 		author = 'Michał Górny',
 		author_email = 'mgorny@gentoo.org',
-		url = 'http://github.com/mgorny/pyremountboot',
+		url = 'http://github.com/mgorny/pymountboot',
 
 		ext_modules = [
 			Extension('pymountboot',
