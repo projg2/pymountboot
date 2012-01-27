@@ -1,19 +1,38 @@
 #include <Python.h>
 
+#include <stdexcept>
+
 extern "C" {
 #define new new_ /* cheap workaround for <= 2.20.1 */
 #include <libmount.h>
 #undef new
 };
 
+enum mountpoint_status {
+	MOUNTPOINT_NONE,
+	MOUNTPOINT_MOUNTED,
+	MOUNTPOINT_REMOUNTED_RW
+};
+
 typedef struct {
 	PyObject_HEAD
 
 	struct libmnt_context *mnt_context;
+	enum mountpoint_status status;
 } BootMountpoint;
 
 static void BootMountpoint_dealloc(PyObject *o);
 static PyObject *BootMountpoint_new(PyTypeObject *type, PyObject *args, PyObject *kwds);
+static PyObject *BootMountpoint_mount(PyObject *args, PyObject *kwds);
+static PyObject *BootMountpoint_umount(PyObject *args, PyObject *kwds);
+
+static PyMethodDef BootMountpoint_methods[] = {
+	{ "mount", BootMountpoint_mount, METH_NOARGS,
+		"Mount (or remount r/w) /boot if necessary" },
+	{ "umount", BootMountpoint_umount, METH_NOARGS,
+		"Unmount (or remount r/o) previously mounted /boot" },
+	{ NULL }
+};
 
 static PyTypeObject BootMountpointType = {
 	PyObject_HEAD_INIT(NULL)
@@ -44,7 +63,7 @@ static PyTypeObject BootMountpointType = {
 	0, /* tp_weaklistoffset */
 	0, /* tp_iter */
 	0, /* tp_iternext */
-	0, /* tp_methods */
+	BootMountpoint_methods, /* tp_methods */
 	0, /* tp_members */
 	0, /* tp_getset */
 	0, /* tp_base */
@@ -85,26 +104,91 @@ PyMODINIT_FUNC initpymountboot(void) {
 static void BootMountpoint_dealloc(PyObject *o) {
 	BootMountpoint *b = reinterpret_cast<BootMountpoint*>(o);
 
+	if (b->status != MOUNTPOINT_NONE) /* clean up! */
+		BootMountpoint_umount(o, NULL);
+
 	mnt_free_context(b->mnt_context);
 }
 
 static PyObject *BootMountpoint_new(PyTypeObject *type, PyObject *args, PyObject *kwds) {
-	PyObject *self;
-	struct libmnt_context *ctx = mnt_new_context();
+	try {
+		struct libmnt_context *ctx = mnt_new_context();
 
-	if (!ctx) {
-		PyErr_SetString(PyExc_RuntimeError, "unable to create libmount context");
+		if (!ctx)
+			throw std::runtime_error("unable to create libmount context");
+
+		try {
+			if (mnt_context_set_target(ctx, "/boot"))
+				throw std::runtime_error("unable to set mountpoint to /boot");
+
+			PyObject *self = type->tp_alloc(type, 0);
+
+			if (self != NULL) {
+				BootMountpoint *b = reinterpret_cast<BootMountpoint*>(self);
+
+				b->mnt_context = ctx;
+				b->status = MOUNTPOINT_NONE;
+			}
+
+			return self;
+		} catch (std::exception e) {
+			mnt_free_context(ctx);
+			throw e;
+		}
+	} catch (std::runtime_error err) {
+		PyErr_SetString(PyExc_RuntimeError, err.what());
+		return NULL;
+	} catch (std::exception e) {
+		PyErr_SetString(PyExc_Exception, e.what());
 		return NULL;
 	}
+}
 
-	self = type->tp_alloc(type, 0);
+static PyObject *BootMountpoint_mount(PyObject *args, PyObject *kwds) {
+	try {
+		BootMountpoint *self = reinterpret_cast<BootMountpoint*>(args);
+		struct libmnt_context* const ctx = self->mnt_context;
 
-	if (self != NULL) {
-		BootMountpoint *b = reinterpret_cast<BootMountpoint*>(self);
+		struct libmnt_table *mtab;
+		if (mnt_context_get_mtab(ctx, &mtab))
+			throw std::runtime_error("unable to get mtab");
 
-		b->mnt_context = ctx;
-	} else
-		mnt_free_context(ctx);
+		/* backward -> find the top-most mount */
+		struct libmnt_fs *fs = mnt_table_find_target(mtab, "/boot",
+				MNT_ITER_BACKWARD);
 
-	return self;
+		if (!fs) { /* boot not mounted, mount it? */
+		} else { /* boot mounted, remount r/w */
+		}
+
+		return Py_None;
+	} catch (std::runtime_error err) {
+		PyErr_SetString(PyExc_RuntimeError, err.what());
+		return NULL;
+	} catch (std::exception e) {
+		PyErr_SetString(PyExc_Exception, e.what());
+		return NULL;
+	}
+}
+
+static PyObject *BootMountpoint_umount(PyObject *args, PyObject *kwds) {
+	try {
+		BootMountpoint *self = reinterpret_cast<BootMountpoint*>(args);
+		struct libmnt_context* const ctx = self->mnt_context;
+
+		switch (self->status) {
+			case MOUNTPOINT_NONE:
+				break;
+			default:
+				throw std::logic_error("Invalid mountpoint_status value");
+		}
+
+		return Py_None;
+	} catch (std::runtime_error err) {
+		PyErr_SetString(PyExc_RuntimeError, err.what());
+		return NULL;
+	} catch (std::exception e) {
+		PyErr_SetString(PyExc_Exception, e.what());
+		return NULL;
+	}
 }
