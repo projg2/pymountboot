@@ -158,7 +158,12 @@ static PyObject *BootMountpoint_mount(PyObject *args, PyObject *kwds) {
 				MNT_ITER_BACKWARD);
 
 		if (!fs) { /* boot not mounted, mount it? */
-		} else { /* boot mounted, remount r/w */
+		} else if (mnt_fs_match_options(fs, "ro")) { /* boot mounted r/o, remount r/w */
+			if (mnt_context_set_options(ctx, "remount,rw"))
+				throw std::runtime_error("unable to set mount options (to 'remount,rw')");
+			if (mnt_context_mount(ctx))
+				throw std::runtime_error("remount r/w failed");
+			self->status = MOUNTPOINT_REMOUNTED_RW;
 		}
 
 		return Py_None;
@@ -179,10 +184,23 @@ static PyObject *BootMountpoint_umount(PyObject *args, PyObject *kwds) {
 		switch (self->status) {
 			case MOUNTPOINT_NONE:
 				break;
+			case MOUNTPOINT_REMOUNTED_RW:
+				if (mnt_reset_context(ctx))
+					throw std::runtime_error("unable to reset mount context");
+				if (mnt_context_set_target(ctx, "/boot"))
+					throw std::runtime_error("unable to set mountpoint to /boot");
+
+				if (mnt_context_set_options(ctx, "remount,ro"))
+					throw std::runtime_error("unable to set mount options (to 'remount,ro')");
+				if (mnt_context_mount(ctx))
+					throw std::runtime_error("remount r/o failed");
+
+				break;
 			default:
-				throw std::logic_error("Invalid mountpoint_status value");
+				throw std::runtime_error("Invalid mountpoint_status value");
 		}
 
+		self->status = MOUNTPOINT_NONE;
 		return Py_None;
 	} catch (std::runtime_error err) {
 		PyErr_SetString(PyExc_RuntimeError, err.what());
