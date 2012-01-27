@@ -118,6 +118,13 @@ static void BootMountpoint_dealloc(PyObject *o) {
 	mnt_free_context(b->mnt_context);
 }
 
+static void BootMountpoint_reset(struct libmnt_context *ctx) {
+	if (mnt_reset_context(ctx))
+		throw std::runtime_error("unable to reset mount context");
+	if (mnt_context_set_target(ctx, "/boot"))
+		throw std::runtime_error("unable to set mountpoint to /boot");
+}
+
 static PyObject *BootMountpoint_new(PyTypeObject *type, PyObject *args, PyObject *kwds) {
 	try {
 		struct libmnt_context *ctx = mnt_new_context();
@@ -126,9 +133,6 @@ static PyObject *BootMountpoint_new(PyTypeObject *type, PyObject *args, PyObject
 			throw std::runtime_error("unable to create libmount context");
 
 		try {
-			if (mnt_context_set_target(ctx, "/boot"))
-				throw std::runtime_error("unable to set mountpoint to /boot");
-
 			PyObject *self = type->tp_alloc(type, 0);
 
 			if (self != NULL) {
@@ -156,6 +160,8 @@ static PyObject *BootMountpoint_mount(PyObject *args, PyObject *kwds) {
 	try {
 		BootMountpoint *self = reinterpret_cast<BootMountpoint*>(args);
 		struct libmnt_context* const ctx = self->mnt_context;
+
+		BootMountpoint_reset(ctx);
 
 		struct libmnt_table *mtab;
 		if (mnt_context_get_mtab(ctx, &mtab))
@@ -194,6 +200,8 @@ static PyObject *BootMountpoint_rwmount(PyObject *args, PyObject *kwds) {
 	try {
 		BootMountpoint *self = reinterpret_cast<BootMountpoint*>(args);
 		struct libmnt_context* const ctx = self->mnt_context;
+
+		BootMountpoint_reset(ctx);
 
 		struct libmnt_table *mtab;
 		if (mnt_context_get_mtab(ctx, &mtab))
@@ -245,10 +253,7 @@ static PyObject *BootMountpoint_umount(PyObject *args, PyObject *kwds) {
 			case MOUNTPOINT_NONE:
 				break;
 			case MOUNTPOINT_MOUNTED:
-				if (mnt_reset_context(ctx))
-					throw std::runtime_error("unable to reset mount context");
-				if (mnt_context_set_target(ctx, "/boot"))
-					throw std::runtime_error("unable to set mountpoint to /boot");
+				BootMountpoint_reset(ctx);
 
 				if (mnt_context_enable_lazy(ctx, true))
 					throw std::runtime_error("unable to enable lazy umount");
@@ -259,10 +264,7 @@ static PyObject *BootMountpoint_umount(PyObject *args, PyObject *kwds) {
 
 				break;
 			case MOUNTPOINT_REMOUNTED_RW:
-				if (mnt_reset_context(ctx))
-					throw std::runtime_error("unable to reset mount context");
-				if (mnt_context_set_target(ctx, "/boot"))
-					throw std::runtime_error("unable to set mountpoint to /boot");
+				BootMountpoint_reset(ctx);
 
 				if (mnt_context_set_options(ctx, "remount,ro"))
 					throw std::runtime_error("unable to set mount options (to 'remount,ro')");
