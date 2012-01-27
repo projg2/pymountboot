@@ -1,7 +1,15 @@
 #include <Python.h>
 
+extern "C" {
+#define new new_ /* cheap workaround for <= 2.20.1 */
+#include <libmount.h>
+#undef new
+};
+
 typedef struct {
 	PyObject_HEAD
+
+	struct libmnt_context *mnt_context;
 } BootMountpoint;
 
 static void BootMountpoint_dealloc(PyObject *o);
@@ -76,16 +84,27 @@ PyMODINIT_FUNC initpymountboot(void) {
 
 static void BootMountpoint_dealloc(PyObject *o) {
 	BootMountpoint *b = reinterpret_cast<BootMountpoint*>(o);
+
+	mnt_free_context(b->mnt_context);
 }
 
 static PyObject *BootMountpoint_new(PyTypeObject *type, PyObject *args, PyObject *kwds) {
 	PyObject *self;
+	struct libmnt_context *ctx = mnt_new_context();
+
+	if (!ctx) {
+		PyErr_SetString(PyExc_RuntimeError, "unable to create libmount context");
+		return NULL;
+	}
 
 	self = type->tp_alloc(type, 0);
 
 	if (self != NULL) {
 		BootMountpoint *b = reinterpret_cast<BootMountpoint*>(self);
-	}
+
+		b->mnt_context = ctx;
+	} else
+		mnt_free_context(ctx);
 
 	return self;
 }
