@@ -1,3 +1,8 @@
+/* pymountboot -- (re)mount /boot (for eclean-kernel)
+ * (c) 2012 Michał Górny <mgorny@gentoo.org>
+ * Released under the terms of the 2-clause BSD license.
+ */
+
 #include <Python.h>
 
 #include <stdexcept>
