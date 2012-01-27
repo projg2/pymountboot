@@ -158,6 +158,18 @@ static PyObject *BootMountpoint_mount(PyObject *args, PyObject *kwds) {
 				MNT_ITER_BACKWARD);
 
 		if (!fs) { /* boot not mounted, mount it? */
+			struct libmnt_table *fstab;
+			if (mnt_context_get_fstab(ctx, &fstab))
+				throw std::runtime_error("unable to get fstab");
+
+			/* try to mount only if in fstab */
+			if (mnt_table_find_target(fstab, "/boot", MNT_ITER_FORWARD)) {
+				if (mnt_context_set_options(ctx, "rw"))
+					throw std::runtime_error("unable to set mount options (to 'rw')");
+				if (mnt_context_mount(ctx))
+					throw std::runtime_error("mount failed");
+				self->status = MOUNTPOINT_MOUNTED;
+			}
 		} else if (mnt_fs_match_options(fs, "ro")) { /* boot mounted r/o, remount r/w */
 			if (mnt_context_set_options(ctx, "remount,rw"))
 				throw std::runtime_error("unable to set mount options (to 'remount,rw')");
@@ -183,6 +195,20 @@ static PyObject *BootMountpoint_umount(PyObject *args, PyObject *kwds) {
 
 		switch (self->status) {
 			case MOUNTPOINT_NONE:
+				break;
+			case MOUNTPOINT_MOUNTED:
+				if (mnt_reset_context(ctx))
+					throw std::runtime_error("unable to reset mount context");
+				if (mnt_context_set_target(ctx, "/boot"))
+					throw std::runtime_error("unable to set mountpoint to /boot");
+
+				if (mnt_context_enable_lazy(ctx, true))
+					throw std::runtime_error("unable to enable lazy umount");
+				if (mnt_context_enable_rdonly_umount(ctx, true))
+					throw std::runtime_error("unable to enable rdonly umount-fallback");
+				if (mnt_context_umount(ctx))
+					throw std::runtime_error("unmount failed");
+
 				break;
 			case MOUNTPOINT_REMOUNTED_RW:
 				if (mnt_reset_context(ctx))
