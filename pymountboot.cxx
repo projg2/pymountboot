@@ -110,7 +110,7 @@ PyMODINIT_FUNC initpymountboot(void) {
 }
 
 static void BootMountpoint_dealloc(PyObject *o) {
-	BootMountpoint *b = reinterpret_cast<BootMountpoint*>(o);
+	BootMountpoint* const b = reinterpret_cast<BootMountpoint*>(o);
 
 	if (b->status != MOUNTPOINT_NONE) /* clean up! */
 		BootMountpoint_umount(o, NULL);
@@ -127,7 +127,7 @@ static void BootMountpoint_reset(struct libmnt_context *ctx) {
 
 static PyObject *BootMountpoint_new(PyTypeObject *type, PyObject *args, PyObject *kwds) {
 	try {
-		struct libmnt_context *ctx = mnt_new_context();
+		struct libmnt_context* const ctx = mnt_new_context();
 
 		if (!ctx)
 			throw std::runtime_error("unable to create libmount context");
@@ -136,7 +136,7 @@ static PyObject *BootMountpoint_new(PyTypeObject *type, PyObject *args, PyObject
 			PyObject *self = type->tp_alloc(type, 0);
 
 			if (self != NULL) {
-				BootMountpoint *b = reinterpret_cast<BootMountpoint*>(self);
+				BootMountpoint* const b = reinterpret_cast<BootMountpoint*>(self);
 
 				b->mnt_context = ctx;
 				b->status = MOUNTPOINT_NONE;
@@ -158,7 +158,7 @@ static PyObject *BootMountpoint_new(PyTypeObject *type, PyObject *args, PyObject
 
 static PyObject *BootMountpoint_mount(PyObject *args, PyObject *kwds) {
 	try {
-		BootMountpoint *self = reinterpret_cast<BootMountpoint*>(args);
+		BootMountpoint* const self = reinterpret_cast<BootMountpoint*>(args);
 		struct libmnt_context* const ctx = self->mnt_context;
 
 		BootMountpoint_reset(ctx);
@@ -168,7 +168,7 @@ static PyObject *BootMountpoint_mount(PyObject *args, PyObject *kwds) {
 			throw std::runtime_error("unable to get mtab");
 
 		/* backward -> find the top-most mount */
-		struct libmnt_fs *fs = mnt_table_find_target(mtab, "/boot",
+		struct libmnt_fs* const fs = mnt_table_find_target(mtab, "/boot",
 				MNT_ITER_BACKWARD);
 
 		if (!fs) { /* boot not mounted, mount it? */
@@ -198,7 +198,7 @@ static PyObject *BootMountpoint_mount(PyObject *args, PyObject *kwds) {
 
 static PyObject *BootMountpoint_rwmount(PyObject *args, PyObject *kwds) {
 	try {
-		BootMountpoint *self = reinterpret_cast<BootMountpoint*>(args);
+		BootMountpoint* const self = reinterpret_cast<BootMountpoint*>(args);
 		struct libmnt_context* const ctx = self->mnt_context;
 
 		BootMountpoint_reset(ctx);
@@ -208,7 +208,7 @@ static PyObject *BootMountpoint_rwmount(PyObject *args, PyObject *kwds) {
 			throw std::runtime_error("unable to get mtab");
 
 		/* backward -> find the top-most mount */
-		struct libmnt_fs *fs = mnt_table_find_target(mtab, "/boot",
+		struct libmnt_fs* const fs = mnt_table_find_target(mtab, "/boot",
 				MNT_ITER_BACKWARD);
 
 		if (!fs) { /* boot not mounted, mount it? */
@@ -246,7 +246,7 @@ static PyObject *BootMountpoint_rwmount(PyObject *args, PyObject *kwds) {
 
 static PyObject *BootMountpoint_umount(PyObject *args, PyObject *kwds) {
 	try {
-		BootMountpoint *self = reinterpret_cast<BootMountpoint*>(args);
+		BootMountpoint* const self = reinterpret_cast<BootMountpoint*>(args);
 		struct libmnt_context* const ctx = self->mnt_context;
 
 		switch (self->status) {
