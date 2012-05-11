@@ -19,10 +19,10 @@ cflags, libs = [pkgconfig_get(x, 'mount') for x in ('--cflags', '--libs')]
 
 setup(
 		name = 'pymountboot',
-		version = '0',
+		version = '0.1',
 		author = 'Michał Górny',
 		author_email = 'mgorny@gentoo.org',
-		url = 'http://github.com/mgorny/pymountboot',
+		url = 'https://bitbucket.org/mgorny/pymountboot',
 
 		ext_modules = [
 			Extension('pymountboot',
@@ -32,7 +32,7 @@ setup(
 		],
 
 		classifiers = [
-			'Development Status :: 3 - Alpha',
+			'Development Status :: 4 - Beta',
 			'Environment :: Console',
 			'Intended Audience :: System Administrators',
 			'License :: OSI Approved :: BSD License',
