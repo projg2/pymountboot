@@ -121,12 +121,13 @@ static void* BootMountpoint_reset(struct libmnt_context *ctx) {
 
 static PyObject *BootMountpoint_new(PyTypeObject *type, PyObject *args, PyObject *kwds) {
 	struct libmnt_context* const ctx = mnt_new_context();
+	PyObject *self;
 
 	if (!ctx)
 		return PyErr_Format(PyExc_RuntimeError,
 				"unable to create libmount context");
 
-	PyObject *self = type->tp_alloc(type, 0);
+	self = type->tp_alloc(type, 0);
 
 	if (self != NULL) {
 		BootMountpoint* const b = (BootMountpoint*) self;
@@ -141,19 +142,16 @@ static PyObject *BootMountpoint_new(PyTypeObject *type, PyObject *args, PyObject
 static PyObject *BootMountpoint_mount(PyObject *args, PyObject *kwds) {
 	BootMountpoint* const self = (BootMountpoint*) args;
 	struct libmnt_context* const ctx = self->mnt_context;
+	struct libmnt_table *mtab;
 
 	BootMountpoint_reset(ctx);
 
-	struct libmnt_table *mtab;
 	if (mnt_context_get_mtab(ctx, &mtab))
 		return PyErr_Format(PyExc_RuntimeError,
 				"unable to get mtab");
 
 	/* backward -> find the top-most mount */
-	struct libmnt_fs* const fs = mnt_table_find_target(mtab, "/boot",
-			MNT_ITER_BACKWARD);
-
-	if (!fs) { /* boot not mounted, mount it? */
+	if (!mnt_table_find_target(mtab, "/boot", MNT_ITER_BACKWARD)) {
 		struct libmnt_table *fstab;
 		if (mnt_context_get_fstab(ctx, &fstab))
 			return PyErr_Format(PyExc_RuntimeError,
@@ -177,16 +175,17 @@ static PyObject *BootMountpoint_mount(PyObject *args, PyObject *kwds) {
 static PyObject *BootMountpoint_rwmount(PyObject *args, PyObject *kwds) {
 	BootMountpoint* const self = (BootMountpoint*) args;
 	struct libmnt_context* const ctx = self->mnt_context;
+	struct libmnt_table *mtab;
+	struct libmnt_fs* fs;
 
 	BootMountpoint_reset(ctx);
 
-	struct libmnt_table *mtab;
 	if (mnt_context_get_mtab(ctx, &mtab))
 		return PyErr_Format(PyExc_RuntimeError,
 				"unable to get mtab");
 
 	/* backward -> find the top-most mount */
-	struct libmnt_fs* const fs = mnt_table_find_target(mtab, "/boot",
+	fs = mnt_table_find_target(mtab, "/boot",
 			MNT_ITER_BACKWARD);
 
 	if (!fs) { /* boot not mounted, mount it? */
