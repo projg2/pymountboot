@@ -7,13 +7,15 @@
 
 #include <libmount.h>
 
-enum mountpoint_status {
+enum mountpoint_status
+{
 	MOUNTPOINT_NONE,
 	MOUNTPOINT_MOUNTED,
 	MOUNTPOINT_REMOUNTED_RW
 };
 
-typedef struct {
+typedef struct
+{
 	PyObject_HEAD
 
 	struct libmnt_context *mnt_context;
@@ -26,7 +28,8 @@ static PyObject *BootMountpoint_mount(PyObject *args, PyObject *kwds);
 static PyObject *BootMountpoint_rwmount(PyObject *args, PyObject *kwds);
 static PyObject *BootMountpoint_umount(PyObject *args, PyObject *kwds);
 
-static PyMethodDef BootMountpoint_methods[] = {
+static PyMethodDef BootMountpoint_methods[] =
+{
 	{ "mount", BootMountpoint_mount, METH_NOARGS,
 		"Mount /boot (r/o) if necessary" },
 	{ "rwmount", BootMountpoint_rwmount, METH_NOARGS,
@@ -36,7 +39,8 @@ static PyMethodDef BootMountpoint_methods[] = {
 	{ NULL }
 };
 
-static PyTypeObject BootMountpointType = {
+static PyTypeObject BootMountpointType =
+{
 	PyObject_HEAD_INIT(NULL)
 	0, /* ob_size */
 	"pymountboot.BootMountpoint", /* tp_name */
@@ -78,7 +82,8 @@ static PyTypeObject BootMountpointType = {
 	BootMountpoint_new /* tp_new */
 };
 
-static PyMethodDef pymountboot_methods[] = {
+static PyMethodDef pymountboot_methods[] =
+{
 	{ NULL }
 };
 
@@ -86,7 +91,8 @@ static PyMethodDef pymountboot_methods[] = {
 #	define PyMODINIT_FUNC void
 #endif
 
-PyMODINIT_FUNC initpymountboot(void) {
+PyMODINIT_FUNC initpymountboot(void)
+{
 	PyObject *m;
 
 	if (PyType_Ready(&BootMountpointType) < 0)
@@ -99,7 +105,8 @@ PyMODINIT_FUNC initpymountboot(void) {
 	PyModule_AddObject(m, "BootMountpoint", (PyObject *)&BootMountpointType);
 }
 
-static void BootMountpoint_dealloc(PyObject *o) {
+static void BootMountpoint_dealloc(PyObject *o)
+{
 	BootMountpoint* const b = (BootMountpoint*) o;
 
 	if (b->status != MOUNTPOINT_NONE) /* clean up! */
@@ -108,7 +115,8 @@ static void BootMountpoint_dealloc(PyObject *o) {
 	mnt_free_context(b->mnt_context);
 }
 
-static void* BootMountpoint_reset(struct libmnt_context *ctx) {
+static void* BootMountpoint_reset(struct libmnt_context *ctx)
+{
 	if (mnt_reset_context(ctx))
 		return PyErr_Format(PyExc_RuntimeError,
 				"unable to reset mount context");
@@ -119,7 +127,8 @@ static void* BootMountpoint_reset(struct libmnt_context *ctx) {
 	return ctx; /* some non-NULL value */
 }
 
-static PyObject *BootMountpoint_new(PyTypeObject *type, PyObject *args, PyObject *kwds) {
+static PyObject *BootMountpoint_new(PyTypeObject *type, PyObject *args, PyObject *kwds)
+{
 	struct libmnt_context* const ctx = mnt_new_context();
 	PyObject *self;
 
@@ -129,7 +138,8 @@ static PyObject *BootMountpoint_new(PyTypeObject *type, PyObject *args, PyObject
 
 	self = type->tp_alloc(type, 0);
 
-	if (self != NULL) {
+	if (self != NULL)
+	{
 		BootMountpoint* const b = (BootMountpoint*) self;
 
 		b->mnt_context = ctx;
@@ -139,7 +149,8 @@ static PyObject *BootMountpoint_new(PyTypeObject *type, PyObject *args, PyObject
 	return self;
 }
 
-static PyObject *BootMountpoint_mount(PyObject *args, PyObject *kwds) {
+static PyObject *BootMountpoint_mount(PyObject *args, PyObject *kwds)
+{
 	BootMountpoint* const self = (BootMountpoint*) args;
 	struct libmnt_context* const ctx = self->mnt_context;
 	struct libmnt_table *mtab;
@@ -151,14 +162,16 @@ static PyObject *BootMountpoint_mount(PyObject *args, PyObject *kwds) {
 				"unable to get mtab");
 
 	/* backward -> find the top-most mount */
-	if (!mnt_table_find_target(mtab, "/boot", MNT_ITER_BACKWARD)) {
+	if (!mnt_table_find_target(mtab, "/boot", MNT_ITER_BACKWARD))
+	{
 		struct libmnt_table *fstab;
 		if (mnt_context_get_fstab(ctx, &fstab))
 			return PyErr_Format(PyExc_RuntimeError,
 					"unable to get fstab");
 
 		/* try to mount only if in fstab */
-		if (mnt_table_find_target(fstab, "/boot", MNT_ITER_FORWARD)) {
+		if (mnt_table_find_target(fstab, "/boot", MNT_ITER_FORWARD))
+		{
 			if (mnt_context_set_options(ctx, "ro"))
 				return PyErr_Format(PyExc_RuntimeError,
 						"unable to set mount options (to 'ro')");
@@ -172,7 +185,8 @@ static PyObject *BootMountpoint_mount(PyObject *args, PyObject *kwds) {
 	return Py_None;
 }
 
-static PyObject *BootMountpoint_rwmount(PyObject *args, PyObject *kwds) {
+static PyObject *BootMountpoint_rwmount(PyObject *args, PyObject *kwds)
+{
 	BootMountpoint* const self = (BootMountpoint*) args;
 	struct libmnt_context* const ctx = self->mnt_context;
 	struct libmnt_table *mtab;
@@ -195,7 +209,8 @@ static PyObject *BootMountpoint_rwmount(PyObject *args, PyObject *kwds) {
 					"unable to get fstab");
 
 		/* try to mount only if in fstab */
-		if (mnt_table_find_target(fstab, "/boot", MNT_ITER_FORWARD)) {
+		if (mnt_table_find_target(fstab, "/boot", MNT_ITER_FORWARD))
+		{
 			if (mnt_context_set_options(ctx, "rw"))
 				return PyErr_Format(PyExc_RuntimeError,
 						"unable to set mount options (to 'rw')");
@@ -218,11 +233,13 @@ static PyObject *BootMountpoint_rwmount(PyObject *args, PyObject *kwds) {
 	return Py_None;
 }
 
-static PyObject *BootMountpoint_umount(PyObject *args, PyObject *kwds) {
+static PyObject *BootMountpoint_umount(PyObject *args, PyObject *kwds)
+{
 	BootMountpoint* const self = (BootMountpoint*) args;
 	struct libmnt_context* const ctx = self->mnt_context;
 
-	switch (self->status) {
+	switch (self->status)
+	{
 		case MOUNTPOINT_NONE:
 			break;
 		case MOUNTPOINT_MOUNTED:
