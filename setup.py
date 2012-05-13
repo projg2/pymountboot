@@ -28,7 +28,7 @@ setup(
 			Extension('pymountboot',
 				extra_compile_args = cflags,
 				extra_link_args = libs,
-				sources = ['pymountboot.cxx'])
+				sources = ['pymountboot.c'])
 		],
 
 		classifiers = [

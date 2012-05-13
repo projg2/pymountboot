@@ -5,11 +5,7 @@
 
 #include <Python.h>
 
-extern "C" {
-#define new new_ /* cheap workaround for <= 2.20.1 */
 #include <libmount.h>
-#undef new
-};
 
 enum mountpoint_status {
 	MOUNTPOINT_NONE,
@@ -90,10 +86,6 @@ static PyMethodDef pymountboot_methods[] = {
 #	define PyMODINIT_FUNC void
 #endif
 
-extern "C" {
-	PyMODINIT_FUNC initpymountboot(void);
-};
-
 PyMODINIT_FUNC initpymountboot(void) {
 	PyObject *m;
 
@@ -108,7 +100,7 @@ PyMODINIT_FUNC initpymountboot(void) {
 }
 
 static void BootMountpoint_dealloc(PyObject *o) {
-	BootMountpoint* const b = reinterpret_cast<BootMountpoint*>(o);
+	BootMountpoint* const b = (BootMountpoint*) o;
 
 	if (b->status != MOUNTPOINT_NONE) /* clean up! */
 		BootMountpoint_umount(o, NULL);
@@ -137,7 +129,7 @@ static PyObject *BootMountpoint_new(PyTypeObject *type, PyObject *args, PyObject
 	PyObject *self = type->tp_alloc(type, 0);
 
 	if (self != NULL) {
-		BootMountpoint* const b = reinterpret_cast<BootMountpoint*>(self);
+		BootMountpoint* const b = (BootMountpoint*) self;
 
 		b->mnt_context = ctx;
 		b->status = MOUNTPOINT_NONE;
@@ -147,7 +139,7 @@ static PyObject *BootMountpoint_new(PyTypeObject *type, PyObject *args, PyObject
 }
 
 static PyObject *BootMountpoint_mount(PyObject *args, PyObject *kwds) {
-	BootMountpoint* const self = reinterpret_cast<BootMountpoint*>(args);
+	BootMountpoint* const self = (BootMountpoint*) args;
 	struct libmnt_context* const ctx = self->mnt_context;
 
 	BootMountpoint_reset(ctx);
@@ -183,7 +175,7 @@ static PyObject *BootMountpoint_mount(PyObject *args, PyObject *kwds) {
 }
 
 static PyObject *BootMountpoint_rwmount(PyObject *args, PyObject *kwds) {
-	BootMountpoint* const self = reinterpret_cast<BootMountpoint*>(args);
+	BootMountpoint* const self = (BootMountpoint*) args;
 	struct libmnt_context* const ctx = self->mnt_context;
 
 	BootMountpoint_reset(ctx);
@@ -228,7 +220,7 @@ static PyObject *BootMountpoint_rwmount(PyObject *args, PyObject *kwds) {
 }
 
 static PyObject *BootMountpoint_umount(PyObject *args, PyObject *kwds) {
-	BootMountpoint* const self = reinterpret_cast<BootMountpoint*>(args);
+	BootMountpoint* const self = (BootMountpoint*) args;
 	struct libmnt_context* const ctx = self->mnt_context;
 
 	switch (self->status) {
@@ -237,10 +229,10 @@ static PyObject *BootMountpoint_umount(PyObject *args, PyObject *kwds) {
 		case MOUNTPOINT_MOUNTED:
 			BootMountpoint_reset(ctx);
 
-			if (mnt_context_enable_lazy(ctx, true))
+			if (mnt_context_enable_lazy(ctx, 1))
 				return PyErr_Format(PyExc_RuntimeError,
 						"unable to enable lazy umount");
-			if (mnt_context_enable_rdonly_umount(ctx, true))
+			if (mnt_context_enable_rdonly_umount(ctx, 1))
 				return PyErr_Format(PyExc_RuntimeError,
 						"unable to enable rdonly umount-fallback");
 			if (mnt_context_umount(ctx))
