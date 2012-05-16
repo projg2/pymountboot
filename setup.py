@@ -19,7 +19,7 @@ cflags, libs = [pkgconfig_get(x, 'mount') for x in ('--cflags', '--libs')]
 
 setup(
 		name = 'pymountboot',
-		version = '0.1',
+		version = '0.2',
 		author = 'Michał Górny',
 		author_email = 'mgorny@gentoo.org',
 		url = 'https://bitbucket.org/mgorny/pymountboot',
@@ -37,7 +37,7 @@ setup(
 			'Intended Audience :: System Administrators',
 			'License :: OSI Approved :: BSD License',
 			'Operating System :: POSIX :: Linux',
-			'Programming Language :: C++',
+			'Programming Language :: C',
 			'Topic :: System :: Filesystems'
 		]
 )
