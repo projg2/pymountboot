@@ -3,24 +3,7 @@
  * Released under the terms of the 2-clause BSD license.
  */
 
-#include <Python.h>
-
-#include <libmount.h>
-
-enum mountpoint_status
-{
-	MOUNTPOINT_NONE,
-	MOUNTPOINT_MOUNTED,
-	MOUNTPOINT_REMOUNTED_RW
-};
-
-typedef struct
-{
-	PyObject_HEAD
-
-	struct libmnt_context *mnt_context;
-	enum mountpoint_status status;
-} BootMountpoint;
+#include "pymountboot.h"
 
 static void BootMountpoint_dealloc(PyObject *o);
 static PyObject *BootMountpoint_new(PyTypeObject *type, PyObject *args, PyObject *kwds);
@@ -39,10 +22,9 @@ static PyMethodDef BootMountpoint_methods[] =
 	{ NULL }
 };
 
-static PyTypeObject BootMountpointType =
+PyTypeObject BootMountpointType =
 {
-	PyObject_HEAD_INIT(NULL)
-	0, /* ob_size */
+	PyVarObject_HEAD_INIT(NULL, 0)
 	"pymountboot.BootMountpoint", /* tp_name */
 	sizeof(BootMountpoint), /* tp_basicsize */
 	0, /* tp_itemsize */
@@ -81,29 +63,6 @@ static PyTypeObject BootMountpointType =
 	0, /* tp_alloc */
 	BootMountpoint_new /* tp_new */
 };
-
-static PyMethodDef pymountboot_methods[] =
-{
-	{ NULL }
-};
-
-#ifndef PyMODINIT_FUNC /* declarations for DLL import/export */
-#	define PyMODINIT_FUNC void
-#endif
-
-PyMODINIT_FUNC initpymountboot(void)
-{
-	PyObject *m;
-
-	if (PyType_Ready(&BootMountpointType) < 0)
-		return;
-
-	m = Py_InitModule3("pymountboot", pymountboot_methods,
-		"Module used to handle /boot auto(re)mounting.");
-
-	Py_INCREF(&BootMountpointType);
-	PyModule_AddObject(m, "BootMountpoint", (PyObject *)&BootMountpointType);
-}
 
 static void BootMountpoint_dealloc(PyObject *o)
 {
