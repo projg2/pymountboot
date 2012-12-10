@@ -141,6 +141,7 @@ static PyObject *BootMountpoint_mount(PyObject *args, PyObject *kwds)
 		}
 	}
 
+	Py_INCREF(Py_None);
 	return Py_None;
 }
 
@@ -189,6 +190,7 @@ static PyObject *BootMountpoint_rwmount(PyObject *args, PyObject *kwds)
 			self->status = MOUNTPOINT_REMOUNTED_RW;
 	}
 
+	Py_INCREF(Py_None);
 	return Py_None;
 }
 
@@ -232,5 +234,6 @@ static PyObject *BootMountpoint_umount(PyObject *args, PyObject *kwds)
 	}
 
 	self->status = MOUNTPOINT_NONE;
+	Py_INCREF(Py_None);
 	return Py_None;
 }
