@@ -19,7 +19,7 @@ cflags, libs = [pkgconfig_get(x, 'mount') for x in ('--cflags', '--libs')]
 
 setup(
 		name = 'pymountboot',
-		version = '0.2.2',
+		version = '0.2.3',
 		author = 'Michał Górny',
 		author_email = 'mgorny@gentoo.org',
 		url = 'https://github.com/mgorny/pymountboot',
