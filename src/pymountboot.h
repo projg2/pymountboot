@@ -27,6 +27,6 @@ typedef struct
 	enum mountpoint_status status;
 } BootMountpoint;
 
-PyTypeObject BootMountpointType;
+extern PyTypeObject BootMountpointType;
 
 #endif /*PYMOUNTBOOT_H*/
