@@ -22,7 +22,7 @@ setup(
 		version = '0.2.2',
 		author = 'Michał Górny',
 		author_email = 'mgorny@gentoo.org',
-		url = 'https://bitbucket.org/mgorny/pymountboot',
+		url = 'https://github.com/mgorny/pymountboot',
 
 		ext_modules = [
 			Extension('pymountboot',
